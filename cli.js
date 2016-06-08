@@ -1,36 +1,49 @@
 const series = require('async-series');
+const fof = require('fof');
 const fs = require('fs');
 const path = require('path');
 const thru = require('through2').obj;
 const tito = require('tito');
 const yaml = require('js-yaml');
-const argv = require('minimist')(process.argv.slice(2));
 
 const DEFAULT_FORMAT = 'csv';
+const STDIN = '/dev/stdin';
 
-if (argv.h || argv.help) {
-  return console.warn(
-    process.argv[1], '[options] [filename.ext] [_directory]'
-  );
+const yargs = require('yargs')
+  .usage('$0 [options] [filename] [output-directory]')
+  .describe('i', 'The input filename (default: stdin)')
+  .describe('o', 'The output directory name (default: ".")')
+  .describe('slug', 'The field of each row to use as the filename "slug"')
+  .default('slug', 'id')
+  .describe('ext', 'The output filename extension')
+  .default('ext', 'md')
+  .describe('content', 'The field of each row to output as file content (rather than front matter)')
+  .default('content', 'content')
+  .describe('format', 'The input file format (default: derive from input filename extension, or "' + DEFAULT_FORMAT + '")')
+  .describe('encoding', 'The input and output encoding')
+  .default('encoding', 'utf8')
+  .alias('h', 'help');
+
+const argv = yargs.argv;
+
+if (argv.help) {
+  return yargs.showHelp();
 }
 
-var input = argv.input || argv.i || argv._.shift();
+var input = argv.i || argv._.shift();
 
 var format = argv.format || argv.f
   || input ? input.split('.').pop() || DEFAULT_FORMAT : DEFAULT_FORMAT;
 
-var encoding = argv.encoding || argv.e || 'utf8';
-
-var outdir = argv.name || argv.c || argv._.shift()
-  || (input
-    ? '_' + path.basename(input).replace(/\.\w+$/, '')
+var outdir = argv.o || argv._.shift()
+  || (input !== STDIN
+    ? '_' + path.filename(input).replace(/\.\w+$/, '')
     : '.');
 
 // return console.log('args:', argv, '->', input, outdir);
 
-var ext = argv.ext || 'md';
-
-var slugField = argv.slug || argv.s || 'id';
+var getSlug = fof(argv.slug);
+var getContent = argv.content ? fof(argv.content) : undefined;
 
 var mkdirIfNotExists = function(done) {
   fs.stat(outdir, function(error, stat) {
@@ -47,7 +60,7 @@ var mkdirIfNotExists = function(done) {
 
 var convert = function(done) {
   var stream = input
-    ? fs.createReadStream(input, encoding)
+    ? fs.createReadStream(input, argv.encoding)
     : process.stdin;
 
   var parse = tito.formats.createReadStream(format);
@@ -57,17 +70,23 @@ var convert = function(done) {
     .pipe(parse)
     .on('error', done)
     .pipe(thru(function(row, enc, next) {
-      var slug = row[slugField];
+      var slug = getSlug(row);
       if (!slug) {
         console.warn('no slug (%s) for:', slugField, row);
         return next();
       }
 
-      var file = path.join(outdir, slug + '.' + ext);
-      var out = fs.createWriteStream(file, encoding);
+      var file = path.join(outdir, slug + '.' + argv.ext);
+      var out = fs.createWriteStream(file, argv.encoding);
       out.write('---\n');
       out.write(yaml.safeDump(row));
       out.write('---\n');
+      if (getContent) {
+        var content = getContent(row);
+        if (content) {
+          out.write(content);
+        }
+      }
       out.end(next);
     }))
     .on('end', done);
