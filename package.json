@@ -1,8 +1,11 @@
 {
   "name": "to-jekyll-collection",
-  "version": "1.0.0",
-  "description": "Convert a data file to a Jekyll collection",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Convert a tabular data file to a Jekyll collection",
+  "main": "cli.js",
+  "bin": {
+    "to-jekyll-collection": "cli.js"
+  },
   "scripts": {
     "test": "mocha"
   },
