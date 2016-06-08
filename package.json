@@ -1,0 +1,22 @@
+{
+  "name": "to-jekyll-collection",
+  "version": "1.0.0",
+  "description": "Convert a data file to a Jekyll collection",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "jekyll",
+    "data"
+  ],
+  "author": "Shawn Allen <shawn.allen@gsa.gov>",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "async-series": "0.0.1",
+    "js-yaml": "^3.6.1",
+    "minimist": "^1.2.0",
+    "through2": "^2.0.1",
+    "tito": "^0.6.1"
+  }
+}
