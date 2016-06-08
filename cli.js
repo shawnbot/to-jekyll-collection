@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const series = require('async-series');
 const fof = require('fof');
 const fs = require('fs');
