@@ -53,7 +53,7 @@ var mkdirIfNotExists = function(done) {
     } else if (!stat.isDirectory()) {
       return done(outdir + ' exists, but is not a directory!');
     }
-    console.warn('directory exists:', outdir);
+    // console.warn('directory exists:', outdir);
     done();
   });
 };
@@ -77,15 +77,20 @@ var convert = function(done) {
       }
 
       var file = path.join(outdir, slug + '.' + argv.ext);
+      console.warn('writing:', file);
       var out = fs.createWriteStream(file, argv.encoding);
+      var content;
+      if (getContent) {
+        content = getContent(row);
+        if (content && argv.content in row) {
+          delete row[argv.content];
+        }
+      }
       out.write('---\n');
       out.write(yaml.safeDump(row));
       out.write('---\n');
-      if (getContent) {
-        var content = getContent(row);
-        if (content) {
-          out.write(content);
-        }
+      if (content) {
+        out.write(content);
       }
       out.end(next);
     }))
